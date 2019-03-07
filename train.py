@@ -32,10 +32,15 @@ def get_batch(idxes,predict=False):
 		for i in len(input_dimensions):
 			X.append(torch.LongTensor(train_data[idxes,i]))
 		Y = torch.LongTensor(train_labels[idxes])
+		if cuda:
+			X = X.cuda()
+			Y = Y.cuda()
 		return X,Y
 	else:
 		for i in len(input_dimensions):
 			X.append(torch.LongTensor(test_data[idxes,i]))
+		if cuda:
+			X = X.cuda()
 		return X,None
 
 
@@ -110,6 +115,8 @@ if __name__== "__main__":
 	train_data = np.load("train_data.npy")
 	train_labels = np.load("train_labels.npy")
 	model = MLP()
+	if cuda:
+		model = model.cuda()
 	writer = SummaryWriter(log_dir="./logs")
 	optimizer = torch.optim.Adam(MLP.parameters())
 	criterion = torch.nn.BCEWithLogitsLoss()
