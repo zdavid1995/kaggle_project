@@ -10,7 +10,7 @@ from tensorboardX import SummaryWriter
 partition_size = 10000
 batch_size = 32
 epoch = 100
-log_step = 10000
+log_step = 100
 input_dimensions = [6, 74, 124, 9623, 2, 9, 2, 2610, 39832,
 					9, 7, 2, 222, 130524, 52, 296, 280, 4, 3,
 					69, 101, 14, 9, 776, 8, 3, 2, 3,
@@ -137,7 +137,7 @@ if __name__== "__main__":
 			if tloss < best_loss:
 				best_loss = tloss
 				with open(model_file_name,'wb') as f:
-					torch.save(MLP.state_dict(),f)
+					torch.save(model.state_dict(),f)
 	except KeyboardInterrupt:
 		print("Stop")
 	except Exception:

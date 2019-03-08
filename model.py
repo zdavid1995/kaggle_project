@@ -4,17 +4,26 @@ cuda = torch.cuda.is_available()
 
 
 input_dimensions = [6, 74, 124, 9623, 2, 9, 2, 2610, 39832,
-					9, 7, 2, 222, 130524, 52, 296, 280, 4, 3,
-					69, 101, 14, 9, 776, 8, 3, 2, 3,
-					3, 351, 28, 3, 14, 14, 3, 4642, 233244,
-					50, 11, 3889, 4, 8797, 5, 636118, 2, 5277,
-					58, 870, 2688, 1809, 11, 93, 52838, 579, 3,
-					40, 216, 325, 40, 32, 9,
-					40, 151, 6, 2, 6, 6, 3, 3, 11,
-					3, 860, 58958, 2, 3, 3, 2, 2, 3, 3, 16]
+			9, 7, 2, 222, 130524, 52, 296, 280, 4, 3,
+			69, 101, 14, 9, 776, 8, 3, 2, 3,
+			3, 351, 28, 3, 14, 14, 3, 4642, 233244,
+			50, 11, 3889, 4, 8797, 5, 636118, 2, 5277,
+			58, 870, 2688, 1809, 11, 93, 52838, 579, 3,
+			40, 216, 325, 40, 32, 9,
+			40, 151, 6, 2, 6, 6, 3, 3, 11,
+			3, 860, 58958, 2, 3, 3, 2, 2, 3, 3, 16]
 #ninp = sum(input_dimensions)
-condense_dim = 25
-ninp = len(input_dimensions)*condense_dim
+condense_dim = [6, 74, 124, 500, 2, 9, 2, 500, 500,
+		9, 7, 2, 222, 500, 52, 296, 280, 4,
+		3, 69, 101, 14, 9, 500, 8, 3, 2, 3,
+		3, 351, 28, 3, 14, 14, 3, 500, 500,
+		50, 11, 500, 4, 500, 5, 500, 2, 500,
+		58, 500, 500, 500, 11, 93, 500, 500,
+		3, 40, 216, 325, 40, 32, 9, 40, 151,
+		6, 2, 6, 6, 3, 3, 11, 3, 500, 500,
+		2, 3, 3, 2, 2, 3, 3, 16]
+#ninp = len(input_dimensions)*condense_dim
+ninp = sum(condense_dim)
 class MLP(nn.Module):
 	def __init__(self,nhid=2048,nlayers=5,nout=1):
 		super(MLP,self).__init__()
@@ -24,8 +33,8 @@ class MLP(nn.Module):
 		self.nout = nout
 		self.nhid = nhid
 		self.input_emb_layers = []
-		for i in input_dimensions:
-			temb = torch.nn.Embedding(i,condense_dim)
+		for i,j in zip(input_dimensions,condense_dim):
+			temb = torch.nn.Embedding(i,j)
 			if cuda:
 				temb = temb.cuda()
 			self.input_emb_layers.append(temb)
