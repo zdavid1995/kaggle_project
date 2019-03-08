@@ -22,6 +22,7 @@ input_dimensions = [6, 74, 124, 9623, 2, 9, 2, 2610, 39832,
 					3, 860, 58958, 2, 3, 3, 2, 2, 3, 3, 16]
 model_file_name = "model.pt"
 output_csv_filename = "output.csv"
+writer = SummaryWriter("./logs")
 # test_data = np.load("test_data.npy")
 
 
@@ -29,16 +30,21 @@ output_csv_filename = "output.csv"
 def get_batch(idxes,predict=False):
 	X = []
 	if not predict:
-		for i in len(input_dimensions):
-			X.append(torch.LongTensor(train_data[idxes,i]))
-		Y = torch.LongTensor(train_labels[idxes])
+		for i in range(len(input_dimensions)):
+			tx = torch.LongTensor(train_data[idxes,i])
+			if cuda:
+				tx = tx.cuda()
+			X.append(tx)
+		Y = torch.FloatTensor(train_labels[idxes])
 		if cuda:
-			X = X.cuda()
 			Y = Y.cuda()
 		return X,Y
 	else:
-		for i in len(input_dimensions):
-			X.append(torch.LongTensor(test_data[idxes,i]))
+		for i in range(len(input_dimensions)):
+			tx = torch.LongTensor(test_data[idxes,i])
+			if cuda:
+				tx = tx.cuda()
+			X.append(tx)
 		if cuda:
 			X = X.cuda()
 		return X,None
@@ -59,24 +65,24 @@ def train(model,optimizer,criterion,r_idx):
 		optimizer.step()
 		total_loss += loss.data.item()
 		if l_step % log_step == 0 and l_step != 0:
-			writer.add_scalar('train_loss',total_loss.item()/log_step)
+			writer.add_scalar('train_loss',total_loss/log_step)
 			# print(total_loss.item()/log_step)
 			total_loss = 0
 		l_step += 1
 
 def validate(model,criterion,r_idx):
 	model.eval()
-	val_idx = r_idx[-partition_size]
+	val_idx = r_idx[-partition_size:]
 	total_loss = 0
 	l_step = 0
 	for i in tqdm(range(0,partition_size,batch_size)):
 		bsz = min(partition_size - i,batch_size)
 		x,y = get_batch(val_idx)
-		out = MLP(x)
+		output = model(x)
 		loss = criterion(output,y)
 		total_loss += loss.data.item()
 		if l_step % log_step == 0 and l_step != 0:
-			writer.add_scalar('val_loss',total_loss.item()/log_step)
+			writer.add_scalar('val_loss',total_loss/log_step)
 			total_loss = 0
 		l_step += 1
 	# total_loss = total_loss/partition_size * batch_size
@@ -112,13 +118,14 @@ def prediction(model,from_save=False):
 def main():
 	pass
 if __name__== "__main__":
+	print("Starting")
 	train_data = np.load("train_data.npy")
 	train_labels = np.load("train_labels.npy")
 	model = MLP()
 	if cuda:
 		model = model.cuda()
-	writer = SummaryWriter(log_dir="./logs")
-	optimizer = torch.optim.Adam(MLP.parameters())
+	print(model)
+	optimizer = torch.optim.Adam(model.parameters())
 	criterion = torch.nn.BCEWithLogitsLoss()
 	try:
 		best_loss = validate(model,criterion,np.arange(partition_size))
