@@ -89,13 +89,12 @@ def validate(model,criterion,r_idx):
 	# print("Validation loss: " + str(total_loss))
 	return total_loss
 
-def prediction(model,from_save=False):
+def prediction():
 	test_data = np.load("test_data.npy")
 	test_machine_id = np.load("test_machine_id.npy")
-	if from_save:
-		model_state = torch.load(model_file_name,map_location= lambda storage,loc:storage)
-		local_model = MLP()
-		local_model.load_state_dict(model_state)
+	model_state = torch.load(model_file_name,map_location= lambda storage,loc:storage)
+	model = MLP()
+	model.load_state_dict(model_state)
 	model.eval()
 	idx = np.arange(len(test_data))
 	outlist = []
