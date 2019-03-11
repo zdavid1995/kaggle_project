@@ -108,7 +108,7 @@ def prediction():
 		outlist.extend(output.data)
 	with open(output_csv_filename,'w') as f:
 		for mid,p in tqdm(zip(test_machine_id,outlist)):
-			f.write(str(test_machine_id) + "," + str(p.item()) + "\n")
+			f.write(str(mid) + "," + str(p.item()) + "\n")
 
 
 
