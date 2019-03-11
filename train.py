@@ -8,7 +8,7 @@ import sys, traceback
 from tensorboardX import SummaryWriter
 
 partition_size = 10000
-batch_size = 32
+batch_size = 256
 epoch = 100
 log_step = 100
 input_dimensions = [6, 74, 124, 9623, 2, 9, 2, 2610, 39832,
@@ -27,7 +27,7 @@ writer = SummaryWriter("./logs")
 
 
 
-def get_batch(idxes,predict=False):
+def get_batch(idxes,predict=False,test_data=None):
 	X = []
 	if not predict:
 		for i in range(len(input_dimensions)):
@@ -45,8 +45,6 @@ def get_batch(idxes,predict=False):
 			if cuda:
 				tx = tx.cuda()
 			X.append(tx)
-		if cuda:
-			X = X.cuda()
 		return X,None
 
 
@@ -77,7 +75,7 @@ def validate(model,criterion,r_idx):
 	l_step = 0
 	for i in tqdm(range(0,partition_size,batch_size)):
 		bsz = min(partition_size - i,batch_size)
-		x,y = get_batch(val_idx)
+		x,y = get_batch(val_idx[i:i+bsz])
 		output = model(x)
 		loss = criterion(output,y)
 		total_loss += loss.data.item()
@@ -92,22 +90,24 @@ def validate(model,criterion,r_idx):
 def prediction():
 	test_data = np.load("test_data.npy")
 	test_machine_id = np.load("test_machine_id.npy")
-	model_state = torch.load(model_file_name,map_location= lambda storage,loc:storage)
+	model_state = torch.load(model_file_name,map_location=lambda storage,loc:storage)
 	model = MLP()
+	if cuda:
+		model = model.cuda()
 	model.load_state_dict(model_state)
 	model.eval()
+	print(model)
 	idx = np.arange(len(test_data))
 	outlist = []
 	l_step = 0
-	sig = torch.nn.Sigmoid()
 	for i in tqdm(range(0,len(test_data),batch_size)):
 		bsz = min(len(test_data) - i,batch_size)
-		x,_ = get_batch(idx,predict=True)
-		output = sig(model(x))
-		output = output.squeeze(1)
-		out_list.extend(output.data)
+		x,_ = get_batch(idx[i:i+bsz],predict=True,test_data=test_data)
+		output = model(x)
+		output = torch.sigmoid(output)
+		outlist.extend(output.data)
 	with open(output_csv_filename,'w') as f:
-		for mid,p in zip(test_machine_id,outlist):
+		for mid,p in tqdm(zip(test_machine_id,outlist)):
 			f.write(str(test_machine_id) + "," + str(p.item()) + "\n")
 
 
@@ -124,6 +124,10 @@ if __name__== "__main__":
 	if cuda:
 		model = model.cuda()
 	print(model)
+	if len(sys.argv) == 2:
+		model_state = torch.load(model_file_name,map_location=lambda storage,loc:storage)
+		model.load_state_dict(model_state)
+		print("loaded saved")
 	optimizer = torch.optim.Adam(model.parameters())
 	criterion = torch.nn.BCEWithLogitsLoss()
 	try:
